@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Auto Rename Bot - Final Corrected Version
-Fixes divdivmod error and preserves original quality
+Auto Rename Bot - Render Deployment Version
+Optimized for Render hosting
 """
 
 import os
@@ -35,17 +35,20 @@ load_dotenv()
 
 # ==================== CONFIGURATION ====================
 class Config:
-    API_ID = int(os.getenv("API_ID", "25775944"))
-    API_HASH = os.getenv("API_HASH", "217e861ebca9da0dd4c17b1abf92636c")
-    BOT_TOKEN = os.getenv("BOT_TOKEN", "8527439347:AAFE-qK2yTYU-90D30eTLF-wyiaHfYyTOZ4")
-    ADMIN = [int(admin) for admin in os.getenv("ADMIN", "1869817167").split()]
-    DB_URL = os.getenv("DB_URL", "mongodb+srv://Filex:Guddu8972771037@cluster0.er3kfsr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+    API_ID = int(os.getenv("API_ID", ""))
+    API_HASH = os.getenv("API_HASH", "")
+    BOT_TOKEN = os.getenv("BOT_TOKEN", "")
+    ADMIN = [int(admin) for admin in os.getenv("ADMIN", "").split(",") if admin.strip()]
+    DB_URL = os.getenv("DB_URL", "")
     DB_NAME = os.getenv("DB_NAME", "Filex")
-    LOG_CHANNEL = int(os.getenv("LOG_CHANNEL", "-1002795055491"))
+    LOG_CHANNEL = int(os.getenv("LOG_CHANNEL", "0"))
     START_PIC = os.getenv("START_PIC", "https://graph.org/file/29a3acbbab9de5f45a5fe.jpg")
     WEBHOOK = os.getenv("WEBHOOK", "False").lower() == "true"
     PORT = int(os.getenv("PORT", "8080"))
     BOT_UPTIME = time.time()
+    # Render specific
+    RENDER = os.getenv("RENDER", "false").lower() == "true"
+    RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL", "")
 
 class Txt:
     START_TXT = """<b>ʜᴇʏ! {}  
@@ -54,35 +57,35 @@ class Txt:
     
     FILE_NAME_TXT = """<b>» <u>sᴇᴛᴜᴘ ᴀᴜᴛᴏ ʀᴇɴᴀᴍᴇ ғᴏʀᴍᴀᴛ</u></b>
 
-<b>ᴠᴀʀɪᴀʙʟᴇꜱ :</b>
-➲ ᴇᴘɪꜱᴏᴅᴇ - ᴛᴏ ʀᴇᴘʟᴀᴄᴇ ᴇᴘɪꜱᴏᴅᴇ ɴᴜᴍʙᴇʀ  
-➲ ꜱᴇᴀꜱᴏɴ - ᴛᴏ ʀᴇᴘʟᴀᴄᴇ ꜱᴇᴀꜱᴏɴ ɴᴜᴍʙᴇʀ  
+<b>ᴠᴀʀɪᴀʙʟᴇs :</b>
+➲ ᴇᴘɪsᴏᴅᴇ - ᴛᴏ ʀᴇᴘʟᴀᴄᴇ ᴇᴘɪsᴏᴅᴇ ɴᴜᴍʙᴇʀ  
+➲ sᴇᴀsᴏɴ - ᴛᴏ ʀᴇᴘʟᴀᴄᴇ sᴇᴀsᴏɴ ɴᴜᴍʙᴇʀ  
 ➲ ǫᴜᴀʟɪᴛʏ - ᴛᴏ ʀᴇᴘʟᴀᴄᴇ ǫᴜᴀʟɪᴛʏ  
 
 <b>‣ ꜰᴏʀ ᴇx:- </b> `/autorename Oᴠᴇʀғʟᴏᴡ [Sseason Eepisode] - [Dual] quality`
 
-<b>‣ /Autorename: ʀᴇɴᴀᴍᴇ ʏᴏᴜʀ ᴍᴇᴅɪᴀ ꜰɪʟᴇꜱ ʙʏ ɪɴᴄʟᴜᴅɪɴɢ 'ᴇᴘɪꜱᴏᴅᴇ' ᴀɴᴅ 'ǫᴜᴀʟɪᴛʏ' ᴠᴀʀɪᴀʙʟᴇꜱ ɪɴ ʏᴏᴜʀ ᴛᴇxᴛ, ᴛᴏ ᴇxᴛʀᴀᴄᴛ ᴇᴘɪꜱᴏᴅᴇ ᴀɴᴅ ǫᴜᴀʟɪᴛʏ ᴘʀᴇꜱᴇɴᴛ ɪɴ ᴛʜᴇ ᴏʀɪɢɪɴᴀʟ ꜰɪʟᴇɴᴀᴍᴇ.</b>"""
+<b>‣ /Autorename: ʀᴇɴᴀᴍᴇ ʏᴏᴜʀ ᴍᴇᴅɪᴀ ꜰɪʟᴇs ʙʏ ɪɴᴄʟᴜᴅɪɴɢ 'ᴇᴘɪsᴏᴅᴇ' ᴀɴᴅ 'ǫᴜᴀʟɪᴛʏ' ᴠᴀʀɪᴀʙʟᴇs ɪɴ ʏᴏᴜʀ ᴛᴇxᴛ, ᴛᴏ ᴇxᴛʀᴀᴄᴛ ᴇᴘɪsᴏᴅᴇ ᴀɴᴅ ǫᴜᴀʟɪᴛʏ ᴘʀᴇsᴇɴᴛ ɪɴ ᴛʜᴇ ᴏʀɪɢɪɴᴀʟ ꜰɪʟᴇɴᴀᴍᴇ.</b>"""
     
-    CAPTION_TXT = """<b><u>» ᴛᴏ ꜱᴇᴛ ᴄᴜꜱᴛᴏᴍ ᴄᴀᴘᴛɪᴏɴ ᴀɴᴅ ᴍᴇᴅɪᴀ ᴛʜʏᴘᴇ</u></b>
+    CAPTION_TXT = """<b><u>» ᴛᴏ sᴇᴛ ᴄᴜsᴛᴏᴍ ᴄᴀᴘᴛɪᴏɴ ᴀɴᴅ ᴍᴇᴅɪᴀ ᴛʜʏᴘᴇ</u></b>
     
-<b>ᴠᴀʀɪᴀʙʟᴇꜱ :</b>         
-ꜱɪᴢᴇ: {filesize}
+<b>ᴠᴀʀɪᴀʙʟᴇs :</b>         
+sɪᴢᴇ: {filesize}
 ᴅᴜʀᴀᴛɪᴏɴ: {duration}
 ꜰɪʟᴇɴᴀᴍᴇ: {filename}
 
-➲ /set_caption: ᴛᴏ ꜱᴇᴛ ᴀ ᴄᴜꜱᴛᴏᴍ ᴄᴀᴘᴛɪᴏɴ.
-➲ /see_caption: ᴛᴏ ᴠɪᴇᴡ ʏᴏᴜʀ ᴄᴜꜱᴛᴏᴍ ᴄᴀᴘᴛɪᴏɴ.
-➲ /del_caption: ᴛᴏ ᴅᴇʟᴇᴛᴇ ʏᴏᴜʀ ᴄᴜꜱᴛᴏᴍ ᴄᴀᴘᴛɪᴏɴ.
+➲ /set_caption: ᴛᴏ sᴇᴛ ᴀ ᴄᴜsᴛᴏᴍ ᴄᴀᴘᴛɪᴏɴ.
+➲ /see_caption: ᴛᴏ ᴠɪᴇᴡ ʏᴏᴜʀ ᴄᴜsᴛᴏᴍ ᴄᴀᴘᴛɪᴏɴ.
+➲ /del_caption: ᴛᴏ ᴅᴇʟᴇᴛᴇ ʏᴏᴜʀ ᴄᴜsᴛᴏᴍ ᴄᴀᴘᴛɪᴏɴ.
 
 » ꜰᴏʀ ᴇx:- /set_caption ꜰɪʟᴇ ɴᴀᴍᴇ: {filename}"""
 
-    THUMBNAIL_TXT = """<b><u>» ᴛᴏ ꜱᴇᴛ ᴄᴜꜱᴛᴏᴍ ᴛʜᴜᴍʙɴᴀɪʟ</u></b>
+    THUMBNAIL_TXT = """<b><u>» ᴛᴏ sᴇᴛ ᴄᴜsᴛᴏᴍ ᴛʜᴜᴍʙɴᴀɪʟ</u></b>
     
-➲ /start: ꜱᴇɴᴅ ᴀɴʏ ᴘʜᴏᴛᴏ ᴛᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ꜱᴇᴛ ɪᴛ ᴀꜱ ᴀ ᴛʜᴜᴍʙɴᴀɪʟ..
-➲ /del_thumb: ᴜꜱᴇ ᴛʜɪꜱ ᴄᴏᴍᴍᴀɴᴅ ᴛᴏ ᴅᴇʟᴇᴛᴇ ʏᴏᴜʀ ᴏʟᴅ ᴛʜᴜᴍʙɴᴀɪʟ.
-➲ /view_thumb: ᴜꜱᴇ ᴛʜɪꜱ ᴄᴏᴍᴍᴀɴᴅ ᴛᴏ ᴠɪᴇᴡ ʏᴏᴜʀ ᴄᴜʀʀᴇɴᴛ ᴛʜᴜᴍʙɴᴀɪʟ.
+➲ /start: sᴇɴᴅ ᴀɴʏ ᴘʜᴏᴛᴏ ᴛᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ sᴇᴛ ɪᴛ ᴀs ᴀ ᴛʜᴜᴍʙɴᴀɪʟ..
+➲ /del_thumb: ᴜsᴇ ᴛʜɪs ᴄᴏᴍᴍᴀɴᴅ ᴛᴏ ᴅᴇʟᴇᴛᴇ ʏᴏᴜʀ ᴏʟᴅ ᴛʜᴜᴍʙɴᴀɪʟ.
+➲ /view_thumb: ᴜsᴇ ᴛʜɪs ᴄᴏᴍᴍᴀɴᴅ ᴛᴏ ᴠɪᴇᴡ ʏᴏᴜʀ ᴄᴜʀʀᴇɴᴛ ᴛʜᴜᴍʙɴᴀɪʟ.
 
-ɴᴏᴛᴇ: ɪꜰ ɴᴏ ᴛʜᴜᴍʙɴᴀɪʟ ꜱᴀᴠᴇᴅ ɪɴ ʙᴏᴛ ᴛʜᴇɴ, ɪᴛ ᴡɪʟʟ ᴜꜱᴇ ᴛʜᴜᴍʙɴᴀɪʟ ᴏꜰ ᴛʜᴇ ᴏʀɪɢɪɴɪᴀʟ ꜰɪʟᴇ ᴛᴏ ꜱᴇᴛ ɪɴ ʀᴇɴᴀᴍᴇᴅ ꜰɪʟᴇ"""
+ɴᴏᴛᴇ: ɪꜰ ɴᴏ ᴛʜᴜᴍʙɴᴀɪʟ sᴀᴠᴇᴅ ɪɴ ʙᴏᴛ ᴛʜᴇɴ, ɪᴛ ᴡɪʟʟ ᴜsᴇ ᴛʜᴜᴍʙɴᴀɪʟ ᴏꜰ ᴛʜᴇ ᴏʀɪɢɪɴɪᴀʟ ꜰɪʟᴇ ᴛᴏ sᴇᴛ ɪɴ ʀᴇɴᴀᴍᴇᴅ ꜰɪʟᴇ"""
 
     PROGRESS_BAR = """\n
 <b>» Size</b> : {1} | {2}
@@ -90,15 +93,15 @@ class Txt:
 <b>» Speed</b> : {3}/s
 <b>» ETA</b> : {4} """
 
-    HELP_TXT = """<b>ʜᴇʀᴇ ɪꜱ ʜᴇʟᴘ ᴍᴇɴᴜ ɪᴍᴘᴏʀᴛᴀɴᴛ ᴄᴏᴍᴍᴀɴᴅꜱ:
+    HELP_TXT = """<b>ʜᴇʀᴇ ɪs ʜᴇʟᴘ ᴍᴇɴᴜ ɪᴍᴘᴏʀᴛᴀɴᴛ ᴄᴏᴍᴍᴀɴᴅs:
 
 ᴀᴡᴇsᴏᴍᴇ ғᴇᴀᴛᴜʀᴇs🫧
 
-ʀᴇɴᴀᴍᴇ ʙᴏᴛ ɪꜱ ᴀ ʜᴀɴᴅʏ ᴛᴏᴏʟ ᴛʜᴀᴛ ʜᴇʟᴘꜱ ʏᴏᴜ ʀᴇɴᴀᴍᴇ ᴀɴᴅ ᴍᴀɴᴀɢᴇ ʏᴏᴜʀ ꜰɪʟᴇꜱ ᴇꜰꜰᴏʀᴛʟᴇꜱꜱʟʏ.
+ʀᴇɴᴀᴍᴇ ʙᴏᴛ ɪs ᴀ ʜᴀɴᴅʏ ᴛᴏᴏʟ ᴛʜᴀᴛ ʜᴇʟᴘs ʏᴏᴜ ʀᴇɴᴀᴍᴇ ᴀɴᴅ ᴍᴀɴᴀɢᴇ ʏᴏᴜʀ ꜰɪʟᴇs ᴇꜰꜰᴏʀᴛʟᴇssʟʏ.
 
-➲ /autorename: ᴀᴜᴛᴏ ʀᴇɴᴀᴍᴇ ʏᴏᴜʀ ꜰɪʟᴇꜱ.xxx
-➲ /metadata: ᴄᴏᴍᴍᴀɴᴅꜱ ᴛᴏ ᴛᴜʀɴ ᴏɴ/ᴏғғ ᴍᴇᴛᴀᴅᴀᴛᴀ.
-➲ /help: ɢᴇᴛ ǫᴜɪᴄᴋ ᴀꜱꜱɪꜱᴛᴀɴᴄᴇ.</b>"""
+➲ /autorename: ᴀᴜᴛᴏ ʀᴇɴᴀᴍᴇ ʏᴏᴜʀ ꜰɪʟᴇs.
+➲ /metadata: ᴄᴏᴍᴍᴀɴᴅs ᴛᴏ ᴛᴜʀɴ ᴏɴ/ᴏꜰꜰ ᴍᴇᴛᴀᴅᴀᴛᴀ.
+➲ /help: ɢᴇᴛ ǫᴜɪᴄᴋ ᴀssɪsᴛᴀɴᴄᴇ.</b>"""
     
     META_TXT = """<b><u>» How to Set Metadata</u></b>
 
@@ -258,15 +261,15 @@ def humanbytes(size):
     return f"{size:.2f} PB"
 
 def TimeFormatter(milliseconds: int) -> str:
-    """Convert milliseconds to readable time format - FIXED VERSION"""
+    """Convert milliseconds to readable time format"""
     seconds, milliseconds = divmod(int(milliseconds), 1000)
     minutes, seconds = divmod(seconds, 60)
     hours, minutes = divmod(minutes, 60)
-    days, hours = divmod(hours, 24)  # FIXED: Changed 'divdivmod' to 'divmod'
+    days, hours = divmod(hours, 24)
     tmp = ((str(days) + "ᴅ, ") if days else "") + \
           ((str(hours) + "ʜ, ") if hours else "") + \
           ((str(minutes) + "ᴍ, ") if minutes else "") + \
-          ((str(seconds) + "ꜱ, ") if seconds else "")
+          ((str(seconds) + "s, ") if seconds else "")
     return tmp[:-2] or "0 s"
 
 async def progress_for_pyrogram(current, total, ud_type, message, start):
@@ -304,22 +307,6 @@ async def progress_for_pyrogram(current, total, ud_type, message, start):
             )
         except:
             pass
-
-# ==================== NSFW CHECK ====================
-nsfw_keywords = [
-    "porn", "sex", "nude", "naked", "boobs", "tits", "pussy", "dick", "cock", "ass",
-    "fuck", "blowjob", "cum", "orgasm", "shemale", "erotic", "masturbate", "anal",
-    "hardcore", "bdsm", "fetish", "lingerie", "xxx", "milf", "gay", "lesbian",
-    "threesome", "hentai", "doujin", "ecchi", "yaoi", "shota", "loli", "tentacle"
-]
-
-async def check_anti_nsfw(filename, message):
-    lower_name = filename.lower()
-    for keyword in nsfw_keywords:
-        if keyword in lower_name:
-            await message.reply_text("❌ NSFW content detected. File not processed.")
-            return True
-    return False
 
 # ==================== FILE PROCESSING FUNCTIONS ====================
 def extract_season_episode(filename):
@@ -390,7 +377,6 @@ async def process_thumbnail(thumb_path):
 async def add_metadata_preserve_quality(input_path, output_path, user_id):
     """
     Add metadata WITHOUT re-encoding - preserves original quality
-    Uses stream copy for all codecs
     """
     if not os.path.exists(input_path):
         raise FileNotFoundError(f"Input file not found: {input_path}")
@@ -403,19 +389,24 @@ async def add_metadata_preserve_quality(input_path, output_path, user_id):
     audio_title = await db.get_audio(user_id)
     subtitle_title = await db.get_subtitle(user_id)
     
-    # Get file extension for format detection
+    # Get file extension
     file_ext = os.path.splitext(input_path)[1].lower()
     
-    # Prepare FFmpeg command - CRITICAL: Use '-c copy' for NO re-encoding
+    # For non-video/audio files, just copy
+    if file_ext not in ['.mp4', '.mkv', '.avi', '.mov', '.flv', '.wmv', '.mp3', '.m4a', '.flac', '.wav', '.aac']:
+        shutil.copy2(input_path, output_path)
+        return output_path
+    
+    # Prepare FFmpeg command
     cmd = [
         'ffmpeg',
         '-i', input_path,
-        '-map', '0',  # Map all streams
-        '-c', 'copy',  # CRITICAL: Copy all streams without re-encoding
-        '-map_metadata', '0',  # Copy existing metadata
+        '-c', 'copy',  # Copy all streams without re-encoding
+        '-map', '0',
+        '-map_metadata', '0',
     ]
     
-    # Add metadata if provided (only add non-empty metadata)
+    # Add metadata if provided
     if title and title.strip():
         cmd.extend(['-metadata', f'title={title}'])
     
@@ -426,26 +417,16 @@ async def add_metadata_preserve_quality(input_path, output_path, user_id):
         cmd.extend(['-metadata', f'author={author}'])
     
     if video_title and video_title.strip():
-        cmd.extend(['-metadata:s:v', f'title={video_title}'])
+        cmd.extend(['-metadata', f'video={video_title}'])
     
     if audio_title and audio_title.strip():
-        cmd.extend(['-metadata:s:a', f'title={audio_title}'])
+        cmd.extend(['-metadata', f'audio={audio_title}'])
     
     if subtitle_title and subtitle_title.strip():
-        cmd.extend(['-metadata:s:s', f'title={subtitle_title}'])
-    
-    # Add format-specific flags for better compatibility
-    if file_ext in ['.mp4', '.m4v', '.mov']:
-        cmd.extend(['-movflags', '+faststart'])  # Optimize for streaming
-        cmd.extend(['-movflags', 'use_metadata_tags'])
-    elif file_ext in ['.mkv']:
-        cmd.extend(['-c:v', 'copy', '-c:a', 'copy', '-c:s', 'copy'])
+        cmd.extend(['-metadata', f'subtitle={subtitle_title}'])
     
     # Add output file
     cmd.extend(['-y', output_path])
-    
-    # Log command for debugging
-    print(f"FFmpeg command (NO RE-ENCODING): {' '.join(cmd)}")
     
     try:
         # Execute FFmpeg
@@ -458,47 +439,12 @@ async def add_metadata_preserve_quality(input_path, output_path, user_id):
         stdout, stderr = await process.communicate()
         
         if process.returncode != 0:
-            error_msg = stderr.decode() if stderr else "Unknown error"
-            
-            # Check if it's a metadata-related error (non-fatal)
-            if "Invalid argument" in error_msg or "Unrecognized option" in error_msg:
-                print(f"Metadata warning: {error_msg[:200]}")
-                # Try simpler command without problematic metadata
-                simple_cmd = [
-                    'ffmpeg',
-                    '-i', input_path,
-                    '-map', '0',
-                    '-c', 'copy',
-                    '-map_metadata', '0',
-                    '-y', output_path
-                ]
-                process2 = await asyncio.create_subprocess_exec(
-                    *simple_cmd,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
-                )
-                await process2.communicate()
-                if process2.returncode == 0:
-                    print("File copied without custom metadata (fallback)")
-                    return output_path
-            
-            raise RuntimeError(f"FFmpeg error: {error_msg[:500]}")
+            # Try simple copy as fallback
+            shutil.copy2(input_path, output_path)
+            return output_path
         
         # Verify file was created
         if os.path.exists(output_path):
-            # Compare file sizes (should be very similar)
-            input_size = os.path.getsize(input_path)
-            output_size = os.path.getsize(output_path)
-            
-            # Metadata adds minimal size, allow small difference
-            size_diff_percent = abs(output_size - input_size) / input_size * 100
-            
-            if size_diff_percent < 5:  # Less than 5% difference
-                print(f"✅ Quality preserved! Size difference: {size_diff_percent:.2f}%")
-                print(f"Input: {humanbytes(input_size)}, Output: {humanbytes(output_size)}")
-            else:
-                print(f"⚠️ Size difference >5%: {size_diff_percent:.2f}%")
-            
             return output_path
         else:
             raise RuntimeError("Output file not created")
@@ -506,12 +452,8 @@ async def add_metadata_preserve_quality(input_path, output_path, user_id):
     except Exception as e:
         print(f"Error in add_metadata_preserve_quality: {e}")
         # Ultimate fallback: just copy the file
-        try:
-            shutil.copy2(input_path, output_path)
-            print("Fallback: File copied without any processing")
-            return output_path
-        except Exception as copy_error:
-            raise RuntimeError(f"Failed to process file: {copy_error}")
+        shutil.copy2(input_path, output_path)
+        return output_path
 
 # ==================== BOT CLIENT ====================
 # Create necessary directories
@@ -524,8 +466,8 @@ app = Client(
     api_id=Config.API_ID,
     api_hash=Config.API_HASH,
     bot_token=Config.BOT_TOKEN,
-    workers=100,
-    sleep_threshold=10,
+    workers=50,  # Reduced for Render
+    sleep_threshold=30,
 )
 
 # ==================== HANDLERS ====================
@@ -540,10 +482,6 @@ async def start_handler(client, message):
         [
             InlineKeyboardButton('• ᴜᴘᴅᴀᴛᴇs', url='https://t.me/Codeflix_Bots'),
             InlineKeyboardButton('sᴜᴘᴘᴏʀᴛ •', url='https://t.me/CodeflixSupport')
-        ],
-        [
-            InlineKeyboardButton('• ᴀʙᴏᴜᴛ', callback_data='about'),
-            InlineKeyboardButton('sᴏᴜʀᴄᴇ •', callback_data='source')
         ]
     ])
     
@@ -569,8 +507,7 @@ async def help_handler(client, message):
             InlineKeyboardButton('ᴄᴀᴘᴛɪᴏɴ •', callback_data='caption')
         ],
         [
-            InlineKeyboardButton('• ᴍᴇᴛᴀᴅᴀᴛᴀ', callback_data='meta'),
-            InlineKeyboardButton('ᴅᴏɴᴀᴛᴇ •', callback_data='donate')
+            InlineKeyboardButton('• ᴍᴇᴛᴀᴅᴀᴛᴀ', callback_data='meta')
         ],
         [InlineKeyboardButton('• ʜᴏᴍᴇ', callback_data='home')]
     ])
@@ -607,176 +544,7 @@ async def autorename_handler(client, message):
         "Now send me any file to rename it automatically."
     )
 
-# Set caption command
-@app.on_message(filters.command("set_caption") & filters.private)
-async def set_caption_handler(client, message):
-    if len(message.command) < 2:
-        await message.reply_text(
-            "**Please provide a caption!**\n\n"
-            "**Example:** `/set_caption File: {filename}\nSize: {filesize}\nDuration: {duration}`\n\n"
-            "**Available variables:**\n"
-            "- `{filename}`: File name\n"
-            "- `{filesize}`: File size\n"
-            "- `{duration}`: Duration"
-        )
-        return
-    
-    caption = message.text.split(" ", 1)[1]
-    await db.set_caption(message.from_user.id, caption)
-    await message.reply_text("✅ Caption set successfully!")
-
-# View caption command
-@app.on_message(filters.command(["see_caption", "view_caption"]) & filters.private)
-async def see_caption_handler(client, message):
-    caption = await db.get_caption(message.from_user.id)
-    if caption:
-        await message.reply_text(f"**Your caption:**\n\n`{caption}`")
-    else:
-        await message.reply_text("❌ No caption set. Use /set_caption to set one.")
-
-# Delete caption command
-@app.on_message(filters.command("del_caption") & filters.private)
-async def del_caption_handler(client, message):
-    await db.set_caption(message.from_user.id, None)
-    await message.reply_text("✅ Caption deleted successfully!")
-
-# View thumbnail command
-@app.on_message(filters.command(["view_thumb", "viewthumb"]) & filters.private)
-async def view_thumb_handler(client, message):
-    thumb = await db.get_thumbnail(message.from_user.id)
-    if thumb:
-        await client.send_photo(message.chat.id, thumb)
-    else:
-        await message.reply_text("❌ No thumbnail set. Send a photo to set as thumbnail.")
-
-# Delete thumbnail command
-@app.on_message(filters.command(["del_thumb", "delthumb"]) & filters.private)
-async def del_thumb_handler(client, message):
-    await db.set_thumbnail(message.from_user.id, None)
-    await message.reply_text("✅ Thumbnail deleted successfully!")
-
-# Set thumbnail from photo
-@app.on_message(filters.private & filters.photo)
-async def set_thumb_handler(client, message):
-    await db.set_thumbnail(message.from_user.id, message.photo.file_id)
-    await message.reply_text("✅ Thumbnail saved successfully!")
-
-# Metadata command
-@app.on_message(filters.command("metadata") & filters.private)
-async def metadata_handler(client, message):
-    metadata_status = await db.get_metadata(message.from_user.id)
-    status_text = "ON ✅" if metadata_status else "OFF ❌"
-    
-    # Get current metadata values
-    title = await db.get_title(message.from_user.id)
-    author = await db.get_author(message.from_user.id)
-    artist = await db.get_artist(message.from_user.id)
-    video = await db.get_video(message.from_user.id)
-    audio = await db.get_audio(message.from_user.id)
-    subtitle = await db.get_subtitle(message.from_user.id)
-    
-    text = f"""
-**㊋ Yᴏᴜʀ Mᴇᴛᴀᴅᴀᴛᴀ ɪꜱ ᴄᴜʀʀᴇɴᴛʟʏ: {status_text}**
-
-**◈ Tɪᴛʟᴇ ▹** `{title if title else 'Nᴏᴛ ꜰᴏᴜɴᴅ'}`  
-**◈ Aᴜᴛʜᴏʀ ▹** `{author if author else 'Nᴏᴛ ꜰᴏᴜɴᴅ'}`  
-**◈ Aʀᴛɪꜱᴛ ▹** `{artist if artist else 'Nᴏᴛ ꜰᴏᴜɴᴅ'}`  
-**◈ Aᴜᴅɪᴏ ▹** `{audio if audio else 'Nᴏᴛ ꜰᴏᴜɴᴅ'}`  
-**◈ Sᴜʙᴛɪᴛʟᴇ ▹** `{subtitle if subtitle else 'Nᴏᴛ ꜰᴏᴜɴᴅ'}`  
-**◈ Vɪᴅᴇᴏ ▹** `{video if video else 'Nᴏᴛ ꜰᴏᴜɴᴅ'}`  
-
-**⚠️ Note:** Metadata addition does NOT re-encode or reduce quality.
-    """
-    
-    buttons = InlineKeyboardMarkup([
-        [
-            InlineKeyboardButton("Turn ON", callback_data="metadata_on"),
-            InlineKeyboardButton("Turn OFF", callback_data="metadata_off")
-        ],
-        [
-            InlineKeyboardButton("How to Set Metadata", callback_data="metainfo")
-        ],
-        [
-            InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="help")
-        ]
-    ])
-    
-    await message.reply_text(
-        text=text,
-        reply_markup=buttons,
-        disable_web_page_preview=True
-    )
-
-# Set media type command
-@app.on_message(filters.command("setmedia") & filters.private)
-async def setmedia_handler(client, message):
-    buttons = InlineKeyboardMarkup([
-        [InlineKeyboardButton("📜 Document", callback_data="media_document")],
-        [InlineKeyboardButton("🎬 Video", callback_data="media_video")],
-        [InlineKeyboardButton("🎵 Audio", callback_data="media_audio")]
-    ])
-    
-    await message.reply_text(
-        "**Select media type for renamed files:**",
-        reply_markup=buttons
-    )
-
-# Metadata setting commands
-@app.on_message(filters.private & filters.command('settitle'))
-async def settitle_handler(client, message):
-    if len(message.command) == 1:
-        return await message.reply_text(
-            "**Gɪᴠᴇ Tʜᴇ Tɪᴛʟᴇ\n\nExᴀᴍᴩʟᴇ:- /settitle Encoded By @Codeflix_Bots**")
-    title = message.text.split(" ", 1)[1]
-    await db.set_title(message.from_user.id, title=title)
-    await message.reply_text("**✅ Tɪᴛʟᴇ Sᴀᴠᴇᴅ**")
-
-@app.on_message(filters.private & filters.command('setauthor'))
-async def setauthor_handler(client, message):
-    if len(message.command) == 1:
-        return await message.reply_text(
-            "**Gɪᴠᴇ Tʜᴇ Aᴜᴛʜᴏʀ\n\nExᴀᴍᴩʟᴇ:- /setauthor @Codeflix_Bots**")
-    author = message.text.split(" ", 1)[1]
-    await db.set_author(message.from_user.id, author=author)
-    await message.reply_text("**✅ Aᴜᴛʜᴏʀ Sᴀᴠᴇᴅ**")
-
-@app.on_message(filters.private & filters.command('setartist'))
-async def setartist_handler(client, message):
-    if len(message.command) == 1:
-        return await message.reply_text(
-            "**Gɪᴠᴇ Tʜᴇ Aʀᴛɪꜱᴛ\n\nExᴀᴍᴩʟᴇ:- /setartist @Codeflix_Bots**")
-    artist = message.text.split(" ", 1)[1]
-    await db.set_artist(message.from_user.id, artist=artist)
-    await message.reply_text("**✅ Aʀᴛɪꜱᴛ Sᴀᴠᴇᴅ**")
-
-@app.on_message(filters.private & filters.command('setaudio'))
-async def setaudio_handler(client, message):
-    if len(message.command) == 1:
-        return await message.reply_text(
-            "**Gɪᴠᴇ Tʜᴇ Aᴜᴅɪᴏ Tɪᴛʟᴇ\n\nExᴀᴍᴩʟᴇ:- /setaudio @Codeflix_Bots**")
-    audio = message.text.split(" ", 1)[1]
-    await db.set_audio(message.from_user.id, audio=audio)
-    await message.reply_text("**✅ Aᴜᴅɪᴏ Sᴀᴠᴇᴅ**")
-
-@app.on_message(filters.private & filters.command('setsubtitle'))
-async def setsubtitle_handler(client, message):
-    if len(message.command) == 1:
-        return await message.reply_text(
-            "**Gɪᴠᴇ Tʜᴇ Sᴜʙᴛɪᴛʟᴇ Tɪᴛʟᴇ\n\nExᴀᴍᴩʟᴇ:- /setsubtitle @Codeflix_Bots**")
-    subtitle = message.text.split(" ", 1)[1]
-    await db.set_subtitle(message.from_user.id, subtitle=subtitle)
-    await message.reply_text("**✅ Sᴜʙᴛɪᴛʟᴇ Sᴀᴠᴇᴅ**")
-
-@app.on_message(filters.private & filters.command('setvideo'))
-async def setvideo_handler(client, message):
-    if len(message.command) == 1:
-        return await message.reply_text(
-            "**Gɪᴠᴇ Tʜᴇ Vɪᴅᴇᴏ Tɪᴛʟᴇ\n\nExᴀᴍᴩʟᴇ:- /setvideo Encoded by @Codeflix_Bots**")
-    video = message.text.split(" ", 1)[1]
-    await db.set_video(message.from_user.id, video=video)
-    await message.reply_text("**✅ Vɪᴅᴇᴏ Sᴀᴠᴇᴅ**")
-
-# Main file handler - UPDATED FOR QUALITY PRESERVATION
+# Main file handler - OPTIMIZED FOR RENDER
 @app.on_message(filters.private & (filters.document | filters.video | filters.audio))
 async def auto_rename_handler(client, message):
     user_id = message.from_user.id
@@ -811,10 +579,6 @@ async def auto_rename_handler(client, message):
         media_type = "audio"
         duration = message.audio.duration
     else:
-        return
-    
-    # Check NSFW
-    if await check_anti_nsfw(file_name, message):
         return
     
     # Extract filename components
@@ -860,7 +624,7 @@ async def auto_rename_handler(client, message):
             await msg.edit_text("❌ Download failed!")
             return
         
-        # Get original file size for comparison
+        # Get original file size
         original_size = os.path.getsize(file_path)
         await msg.edit_text(f"⚙️ **Processing file... (Size: {humanbytes(original_size)})**")
         
@@ -868,35 +632,20 @@ async def auto_rename_handler(client, message):
         output_path = file_path
         metadata_enabled = await db.get_metadata(user_id)
         
-        if metadata_enabled and media_type in ["video", "audio"]:
+        # Check if file is video/audio for metadata
+        is_video_audio = any(ext in file_path.lower() for ext in ['.mp4', '.mkv', '.avi', '.mov', '.flv', '.wmv', '.mp3', '.m4a', '.flac', '.wav', '.aac'])
+        
+        if metadata_enabled and is_video_audio:
             try:
                 metadata_path = f"temp/{user_id}_metadata{ext}"
-                await msg.edit_text("🔧 **Adding metadata (NO re-encoding)...**")
+                await msg.edit_text("🔧 **Adding metadata...**")
                 output_path = await add_metadata_preserve_quality(file_path, metadata_path, user_id)
                 
-                # Compare file sizes
-                if os.path.exists(output_path):
-                    new_size = os.path.getsize(output_path)
-                    size_diff = abs(new_size - original_size)
-                    size_diff_percent = (size_diff / original_size) * 100
-                    
-                    if size_diff_percent < 1:
-                        await msg.edit_text(f"✅ **Quality preserved! ({size_diff_percent:.2f}% size difference)**")
-                    else:
-                        await msg.edit_text(f"⚠️ **File processed ({size_diff_percent:.2f}% size difference)**")
-                    
-                    # Clean up original file
+                if os.path.exists(output_path) and output_path != file_path:
                     await cleanup_files(file_path)
-                else:
-                    await msg.edit_text("⚠️ Output file not found, using original")
-                    output_path = file_path
-                    
             except Exception as e:
                 print(f"Metadata error: {e}")
-                await msg.edit_text(f"⚠️ Metadata error: {str(e)[:100]}... (continuing without metadata)")
-                output_path = file_path  # Use original file
-        elif metadata_enabled:
-            await msg.edit_text("ℹ️ Metadata is only supported for video and audio files. Continuing without metadata...")
+                output_path = file_path
         
         # Get thumbnail
         thumb_path = None
@@ -913,10 +662,13 @@ async def auto_rename_handler(client, message):
             thumb_path = await process_thumbnail(thumb_path)
         
         # Get caption
-        caption_template = await db.get_caption(user_id) or "{filename}"
-        caption = caption_template.replace("{filename}", new_filename)\
-                                 .replace("{filesize}", humanbytes(file_size))\
-                                 .replace("{duration}", str(timedelta(seconds=duration)) if duration else '00:00:00')
+        caption_template = await db.get_caption(user_id)
+        if caption_template:
+            caption = caption_template.replace("{filename}", new_filename)\
+                                     .replace("{filesize}", humanbytes(file_size))\
+                                     .replace("{duration}", str(timedelta(seconds=duration)) if duration else '00:00:00')
+        else:
+            caption = None
         
         # Get media type preference
         media_pref = await db.get_media_preference(user_id)
@@ -928,7 +680,11 @@ async def auto_rename_handler(client, message):
         # Upload file based on media preference
         upload_start = time.time()
         
-        if media_pref == "document" or media_type == "document":
+        # Check file type
+        is_video_file = any(output_path.lower().endswith(ext) for ext in ['.mp4', '.mkv', '.avi', '.mov', '.flv', '.wmv', '.webm'])
+        is_audio_file = any(output_path.lower().endswith(ext) for ext in ['.mp3', '.m4a', '.flac', '.wav', '.aac', '.ogg'])
+        
+        if media_pref == "document":
             await client.send_document(
                 chat_id=message.chat.id,
                 document=output_path,
@@ -938,28 +694,29 @@ async def auto_rename_handler(client, message):
                 progress=progress_for_pyrogram,
                 progress_args=("📤 Uploading...", msg, upload_start)
             )
-        elif media_pref == "video" and media_type == "video":
+        elif media_pref == "video" and is_video_file:
             await client.send_video(
                 chat_id=message.chat.id,
                 video=output_path,
                 caption=caption,
                 thumb=thumb_path,
-                duration=duration,
+                duration=duration if duration > 0 else None,
+                supports_streaming=True,
                 progress=progress_for_pyrogram,
                 progress_args=("📤 Uploading...", msg, upload_start)
             )
-        elif media_pref == "audio" and media_type == "audio":
+        elif media_pref == "audio" and is_audio_file:
             await client.send_audio(
                 chat_id=message.chat.id,
                 audio=output_path,
                 caption=caption,
                 thumb=thumb_path,
-                duration=duration,
+                duration=duration if duration > 0 else None,
+                title=new_filename.rsplit('.', 1)[0],
                 progress=progress_for_pyrogram,
                 progress_args=("📤 Uploading...", msg, upload_start)
             )
         else:
-            # Fallback to document
             await client.send_document(
                 chat_id=message.chat.id,
                 document=output_path,
@@ -972,30 +729,24 @@ async def auto_rename_handler(client, message):
         
         await msg.delete()
         
-        # Send final message with size comparison
-        size_comparison = ""
-        if metadata_enabled and media_type in ["video", "audio"]:
-            size_diff = final_size - file_size
-            if abs(size_diff) > 1024:  # More than 1KB difference
-                size_comparison = f"\n**Size change:** {humanbytes(abs(size_diff))} ({'+' if size_diff > 0 else ''}{size_diff/file_size*100:.2f}%)"
-        
         await message.reply_text(
             f"✅ **File renamed successfully!**\n"
             f"**New name:** `{new_filename}`\n"
             f"**Original size:** {humanbytes(file_size)}\n"
-            f"**Final size:** {humanbytes(final_size)}"
-            f"{size_comparison}"
+            f"**Final size:** {humanbytes(final_size)}\n"
+            f"**Sent as:** {media_pref.upper()}"
         )
         
     except Exception as e:
-        await msg.edit_text(f"❌ **Error:** {str(e)}")
+        await msg.edit_text(f"❌ **Error:** {str(e)[:200]}")
         print(f"Error: {e}")
-        import traceback
-        traceback.print_exc()
     finally:
         # Cleanup
-        await cleanup_files(download_path, output_path if 'output_path' in locals() and output_path != file_path else None, 
-                          thumb_path if 'thumb_path' in locals() else None)
+        await cleanup_files(
+            download_path if 'download_path' in locals() else None,
+            output_path if 'output_path' in locals() and output_path != file_path and os.path.exists(output_path) else None,
+            thumb_path if 'thumb_path' in locals() and thumb_path and os.path.exists(thumb_path) else None
+        )
 
 # Callback query handler
 @app.on_callback_query()
@@ -1009,10 +760,6 @@ async def callback_handler(client, query):
             [
                 InlineKeyboardButton('• ᴜᴘᴅᴀᴛᴇs', url='https://t.me/Codeflix_Bots'),
                 InlineKeyboardButton('sᴜᴘᴘᴏʀᴛ •', url='https://t.me/CodeflixSupport')
-            ],
-            [
-                InlineKeyboardButton('• ᴀʙᴏᴜᴛ', callback_data='about'),
-                InlineKeyboardButton('sᴏᴜʀᴄᴇ •', callback_data='source')
             ]
         ])
         
@@ -1030,8 +777,7 @@ async def callback_handler(client, query):
                 InlineKeyboardButton('ᴄᴀᴘᴛɪᴏɴ •', callback_data='caption')
             ],
             [
-                InlineKeyboardButton('• ᴍᴇᴛᴀᴅᴀᴛᴀ', callback_data='meta'),
-                InlineKeyboardButton('ᴅᴏɴᴀᴛᴇ •', callback_data='donate')
+                InlineKeyboardButton('• ᴍᴇᴛᴀᴅᴀᴛᴀ', callback_data='meta')
             ],
             [InlineKeyboardButton('• ʜᴏᴍᴇ', callback_data='home')]
         ])
@@ -1044,8 +790,9 @@ async def callback_handler(client, query):
     
     elif data == "file_names":
         format_template = await db.get_format_template(user_id) or "Not set"
+        text = Txt.FILE_NAME_TXT + f"\n\n**Your current format:** `{format_template}`"
         await query.message.edit_text(
-            Txt.FILE_NAME_TXT.format(format_template=format_template),
+            text,
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="help")]
             ]),
@@ -1074,22 +821,12 @@ async def callback_handler(client, query):
         metadata_status = await db.get_metadata(user_id)
         status_text = "ON ✅" if metadata_status else "OFF ❌"
         
-        title = await db.get_title(user_id)
-        author = await db.get_author(user_id)
-        artist = await db.get_artist(user_id)
-        video = await db.get_video(user_id)
-        audio = await db.get_audio(user_id)
-        subtitle = await db.get_subtitle(user_id)
-        
         text = f"""
-**㊋ Yᴏᴜʀ Mᴇᴛᴀᴅᴀᴛᴀ ɪꜱ ᴄᴜʀʀᴇɴᴛʟʏ: {status_text}**
+**㊋ Yᴏᴜʀ Mᴇᴛᴀᴅᴀᴛᴀ ɪs ᴄᴜʀʀᴇɴᴛʟʏ: {status_text}**
 
-**◈ Tɪᴛʟᴇ ▹** `{title if title else 'Nᴏᴛ ꜰᴏᴜɴᴅ'}`  
-**◈ Aᴜᴛʜᴏʀ ▹** `{author if author else 'Nᴏᴛ ꜰᴏᴜɴᴅ'}`  
-**◈ Aʀᴛɪꜱᴛ ▹** `{artist if artist else 'Nᴏᴛ ꜰᴏᴜɴᴅ'}`  
-**◈ Aᴜᴅɪᴏ ▹** `{audio if audio else 'Nᴏᴛ ꜰᴏᴜɴᴅ'}`  
-**◈ Sᴜʙᴛɪᴛʟᴇ ▹** `{subtitle if subtitle else 'Nᴏᴛ ꜰᴏᴜɴᴅ'}`  
-**◈ Vɪᴅᴇᴏ ▹** `{video if video else 'Nᴏᴛ ꜰᴏᴜɴᴅ'}`  
+**◈ Tɪᴛʟᴇ ▹** `{await db.get_title(user_id)}`  
+**◈ Aᴜᴛʜᴏʀ ▹** `{await db.get_author(user_id)}`  
+**◈ Aʀᴛɪsᴛ ▹** `{await db.get_artist(user_id)}`  
 
 **⚠️ Note:** Metadata addition does NOT re-encode or reduce quality.
         """
@@ -1115,94 +852,24 @@ async def callback_handler(client, query):
     
     elif data == "metadata_on":
         await db.set_metadata(user_id, True)
-        await query.answer("Metadata turned ON ✅")
-        
-        metadata_status = await db.get_metadata(user_id)
-        status_text = "ON ✅" if metadata_status else "OFF ❌"
-        
-        title = await db.get_title(user_id)
-        author = await db.get_author(user_id)
-        artist = await db.get_artist(user_id)
-        video = await db.get_video(user_id)
-        audio = await db.get_audio(user_id)
-        subtitle = await db.get_subtitle(user_id)
-        
-        text = f"""
-**㊋ Yᴏᴜʀ Mᴇᴛᴀᴅᴀᴛᴀ ɪꜱ ᴄᴜʀʀᴇɴᴛʟʏ: {status_text}**
-
-**◈ Tɪᴛʟᴇ ▹** `{title if title else 'Nᴏᴛ ꜰᴏᴜɴᴅ'}`  
-**◈ Aᴜᴛʜᴏʀ ▹** `{author if author else 'Nᴏᴛ ꜰᴏᴜɴᴅ'}`  
-**◈ Aʀᴛɪꜱᴛ ▹** `{artist if artist else 'Nᴏᴛ ꜰᴏᴜɴᴅ'}`  
-**◈ Aᴜᴅɪᴏ ▹** `{audio if audio else 'Nᴏᴛ ꜰᴏᴜɴᴅ'}`  
-**◈ Sᴜʙᴛɪᴛʟᴇ ▹** `{subtitle if subtitle else 'Nᴏᴛ ꜰᴏᴜɴᴅ'}`  
-**◈ Vɪᴅᴇᴏ ▹** `{video if video else 'Nᴏᴛ ꜰᴏᴜɴᴅ'}`  
-
-**⚠️ Note:** Metadata addition does NOT re-encode or reduce quality.
-        """
-        
-        buttons = InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton("Turn ON ✅", callback_data="metadata_on"),
-                InlineKeyboardButton("Turn OFF", callback_data="metadata_off")
-            ],
-            [
-                InlineKeyboardButton("How to Set Metadata", callback_data="metainfo")
-            ],
-            [
-                InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="help")
-            ]
-        ])
-        
+        await query.answer("Metadata turned ON ✅", show_alert=True)
         await query.message.edit_text(
-            text=text,
-            reply_markup=buttons,
-            disable_web_page_preview=True
+            "✅ **Metadata has been turned ON!**\n\n"
+            "Now when you rename files, metadata will be added without re-encoding.",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="meta")]
+            ])
         )
     
     elif data == "metadata_off":
         await db.set_metadata(user_id, False)
-        await query.answer("Metadata turned OFF ❌")
-        
-        metadata_status = await db.get_metadata(user_id)
-        status_text = "ON ✅" if metadata_status else "OFF ❌"
-        
-        title = await db.get_title(user_id)
-        author = await db.get_author(user_id)
-        artist = await db.get_artist(user_id)
-        video = await db.get_video(user_id)
-        audio = await db.get_audio(user_id)
-        subtitle = await db.get_subtitle(user_id)
-        
-        text = f"""
-**㊋ Yᴏᴜʀ Mᴇᴛᴀᴅᴀᴛᴀ ɪꜱ ᴄᴜʀʀᴇɴᴛʟʏ: {status_text}**
-
-**◈ Tɪᴛʟᴇ ▹** `{title if title else 'Nᴏᴛ ꜰᴏᴜɴᴅ'}`  
-**◈ Aᴜᴛʜᴏʀ ▹** `{author if author else 'Nᴏᴛ ꜰᴏᴜɴᴅ'}`  
-**◈ Aʀᴛɪꜱᴛ ▹** `{artist if artist else 'Nᴏᴛ ꜰᴏᴜɴᴅ'}`  
-**◈ Aᴜᴅɪᴏ ▹** `{audio if audio else 'Nᴏᴛ ꜰᴏᴜɴᴅ'}`  
-**◈ Sᴜʙᴛɪᴛʟᴇ ▹** `{subtitle if subtitle else 'Nᴏᴛ ꜰᴏᴜɴᴅ'}`  
-**◈ Vɪᴅᴇᴏ ▹** `{video if video else 'Nᴏᴛ ꜰᴏᴜɴᴅ'}`  
-
-**⚠️ Note:** Metadata addition does NOT re-encode or reduce quality.
-        """
-        
-        buttons = InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton("Turn ON", callback_data="metadata_on"),
-                InlineKeyboardButton("Turn OFF ✅", callback_data="metadata_off")
-            ],
-            [
-                InlineKeyboardButton("How to Set Metadata", callback_data="metainfo")
-            ],
-            [
-                InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="help")
-            ]
-        ])
-        
+        await query.answer("Metadata turned OFF ❌", show_alert=True)
         await query.message.edit_text(
-            text=text,
-            reply_markup=buttons,
-            disable_web_page_preview=True
+            "❌ **Metadata has been turned OFF!**\n\n"
+            "Files will be renamed without adding metadata.",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="meta")]
+            ])
         )
     
     elif data == "metainfo":
@@ -1216,15 +883,16 @@ async def callback_handler(client, query):
                 ]
             ])
         )
-        return
     
     elif data.startswith("media_"):
         media_type = data.split("_")[1]
         await db.set_media_preference(user_id, media_type)
-        await query.answer(f"Media type set to {media_type.capitalize()} ✅")
+        await query.answer(f"Media type set to {media_type.capitalize()} ✅", show_alert=True)
+        
         await query.message.edit_text(
-            f"✅ **Media type set to {media_type.capitalize()}!**\n\n"
-            f"Renamed files will be sent as {media_type}s.",
+            f"✅ **Media type set to {media_type.upper()}!**\n\n"
+            f"Renamed files will be sent as {media_type}s.\n\n"
+            "**Note:** Video/Audio format only works for actual video/audio files.",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="help")]
             ])
@@ -1233,71 +901,20 @@ async def callback_handler(client, query):
     elif data == "close":
         await query.message.delete()
     
-    elif data in ["about", "source", "donate"]:
-        await query.answer("This feature will be added soon!", show_alert=True)
-    
     else:
         await query.answer("Feature not implemented yet!", show_alert=True)
 
-# Admin commands
-@app.on_message(filters.command("stats") & filters.user(Config.ADMIN))
-async def stats_handler(client, message):
-    total_users = await db.total_users_count()
-    uptime = time.strftime("%Hh%Mm%Ss", time.gmtime(time.time() - Config.BOT_UPTIME))
-    
-    await message.reply_text(
-        f"**📊 Bot Statistics**\n\n"
-        f"**• Total Users:** `{total_users}`\n"
-        f"**• Uptime:** `{uptime}`\n"
-        f"**• Admin IDs:** `{', '.join(map(str, Config.ADMIN))}`"
-    )
+# ==================== RENDER WEB SERVER ====================
+from aiohttp import web
 
-@app.on_message(filters.command("broadcast") & filters.user(Config.ADMIN) & filters.reply)
-async def broadcast_handler(client, message):
-    if not message.reply_to_message:
-        await message.reply_text("Please reply to a message to broadcast!")
-        return
-    
-    broadcast_msg = message.reply_to_message
-    total_users = await db.total_users_count()
-    sent = 0
-    failed = 0
-    
-    status_msg = await message.reply_text("📢 Starting broadcast...")
-    
-    all_users = await db.get_all_users()
-    async for user in all_users:
-        try:
-            await broadcast_msg.copy(chat_id=user["_id"])
-            sent += 1
-        except Exception as e:
-            print(f"Failed to send to {user['_id']}: {e}")
-            failed += 1
-        
-        if (sent + failed) % 10 == 0:
-            await status_msg.edit_text(
-                f"📢 Broadcasting...\n\n"
-                f"**Sent:** {sent}\n"
-                f"**Failed:** {failed}\n"
-                f"**Total:** {total_users}"
-            )
-    
-    await status_msg.edit_text(
-        f"✅ **Broadcast Complete!**\n\n"
-        f"**Total Users:** {total_users}\n"
-        f"**✅ Sent:** {sent}\n"
-        f"**❌ Failed:** {failed}"
-    )
-
-# Restart command (admin only)
-@app.on_message(filters.command("restart") & filters.user(Config.ADMIN))
-async def restart_handler(client, message):
-    await message.reply_text("**🔄 Restarting bot...**")
-    os.execl(sys.executable, sys.executable, *sys.argv)
+async def web_server():
+    web_app = web.Application(client_max_size=30000000)
+    web_app.add_routes([web.get('/', lambda r: web.Response(text="Auto Rename Bot is Running!"))])
+    return web_app
 
 # ==================== MAIN ====================
 if __name__ == "__main__":
-    # Configure logging
+    # Configure logging for Render
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -1305,16 +922,28 @@ if __name__ == "__main__":
     
     # Check for FFmpeg
     if not shutil.which("ffmpeg"):
-        print("⚠️ WARNING: ffmpeg not found! Metadata features will not work.")
-        print("Install ffmpeg:")
-        print("  Ubuntu/Debian: sudo apt-get install ffmpeg")
-        print("  MacOS: brew install ffmpeg")
-        print("  Windows: Download from ffmpeg.org")
+        print("⚠️ WARNING: ffmpeg not found! Installing...")
+        try:
+            # Try to install ffmpeg
+            os.system("apt-get update && apt-get install -y ffmpeg")
+        except:
+            print("Failed to install ffmpeg. Metadata features may not work.")
     else:
         print("✅ FFmpeg found")
     
-    print("🚀 Starting Auto Rename Bot (Final Corrected Version)...")
-    print("🤖 Bot is running. Press Ctrl+C to stop.")
+    print("🚀 Starting Auto Rename Bot on Render...")
+    print(f"🤖 Bot Token: {Config.BOT_TOKEN[:10]}...")
+    print(f"👑 Admin IDs: {Config.ADMIN}")
+    
+    # Start web server in background for Render
+    if Config.RENDER:
+        print("🌐 Starting web server for Render...")
+        import threading
+        def run_web():
+            web.run_app(web_server(), port=Config.PORT, host='0.0.0.0')
+        
+        web_thread = threading.Thread(target=run_web, daemon=True)
+        web_thread.start()
     
     try:
         app.run()
